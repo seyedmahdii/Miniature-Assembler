@@ -16,7 +16,7 @@ struct symbolTable{
 struct instruction{
 	size_t instType; 	// 0 means R-type, 1 means I-type, 2 means J-type
 	size_t intInst;
-	char *nemonic;
+	char *mnemonic;
 	char inst[9];		// Ye reshte ke Hex e insuction hast
 	int rs;
 	int rt;
