@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 #define NORTYPE 5
 #define NOITYPE 8
 #define NOJTYPE 2
@@ -15,11 +16,12 @@ struct symbolTable{
 };
 
 struct instruction{
-	size_t instType; 	// 0 means R-type, 1 means I-type, 2 means J-type
+	char instType; 	// 0 means R-type, 1 means I-type, 2 means J-type
 	size_t intInst;		// Aval instruction ro mibarim be hex va baad tabdil be decimal
 	char *mnemonic;
-	char inst[9];		// Ye reshte ke Hex e insuction hast
-	char opCode[5];	// 4 bit
+	char instBin[33];
+	long long instDec;
+	int opCode;
 	int rs;
 	int rt;
 	int rd;
@@ -30,13 +32,20 @@ struct instruction{
 struct memoryTable{
 	char lable[7];
 	int value;
+	int address;
 };
 
 int findSymbolTableLen(FILE *);
 int fillSymbolTable(struct symbolTable *, FILE *);
-void formInstruction(struct instruction *, FILE *);
+void formInstruction(struct instruction *);
 int hex2Int(char *);
 void int2Hex16(char *, int);	// imm value ke 16 bit e
 int getLableValue(struct symbolTable *, int , char *);
 bool isLable(char *);
 void writeToFile(FILE *, int);
+int getLableAdress(struct memoryTable *, char *);	// Returns the address of lable
+int getAdressValue(struct memoryTable *, int);	// Returns the value of a address
+char *getNthLine(FILE *, int);
+long long int2Binary(int dec);	// Converts decimal to binary
+char *binaryExtend(long long bin, int len, char sign);	// Etxends binary
+long long bin2Dec(char *, int);

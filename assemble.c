@@ -9,7 +9,7 @@ void main(int argc,char **argv){
    registers[0] = 0;
    struct memoryTable *pMemoryTable;
    int memoryCounter = 0;
-   int i, j, found, noInsts;
+   int i, j, noInsts;
    struct instruction *currInst;
    size_t lineSize;
    char *line;
@@ -21,8 +21,6 @@ void main(int argc,char **argv){
       "j", "halt"
    };
    int instCount = 0;
-   char hexTable[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-   char lower[5];
 
    i = 0;
    j = 0;
@@ -57,15 +55,9 @@ void main(int argc,char **argv){
    // Initializing memory table
    pMemoryTable = (struct memoryTable *)malloc(memorySize*sizeof(struct memoryTable));
 
-   // for(i=0; i<symbolTableLen; i++){
-   //    printf("sym: %s \t val: %d\n", pSymbolTable[i].symbol, pSymbolTable[i].value);
-   // }
-   // printf("\n\n\n");
-
    while(getline(&line, &lineSize, assp) != -1){
       currInst->PC = instCount;
       instCount++;
-      found = 0;
       token = strtok(line, "\t, \n");
       strcpy(lable, token);   // Saving the first word for .fill
       for(i=0; i<symbolTableLen; i++){
@@ -87,12 +79,11 @@ void main(int argc,char **argv){
          else{
             currInst->intInst = atoi(token);
          }
-         printf("currInst->intInst: %d \t token: %s \n", currInst->intInst, token);
 
          if(memoryCounter < 2048){
             strcpy(pMemoryTable[memoryCounter].lable, lable);
+            pMemoryTable[memoryCounter].address = instCount-1;
             pMemoryTable[memoryCounter].value = currInst->intInst;
-            // printf("%d\n", pMemoryTable[memoryCounter].value);
             writeToFile(machp, pMemoryTable[memoryCounter].value);
             memoryCounter++;
          }
@@ -104,6 +95,7 @@ void main(int argc,char **argv){
 
       if(strcmp(currInst->mnemonic, "lw") == 0){
          currInst->instType = 1;
+         currInst->opCode = 9;
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
          token = strtok(NULL, "\t, \n");
@@ -115,10 +107,22 @@ void main(int argc,char **argv){
          else{
             currInst->imm = atoi(token);
          }
-         strcpy(currInst->opCode, "1001");
-         // registers[currInst->rt] = load(registers[currInst->rs] + currInst->imm);
+         int address = registers[currInst->rs] + currInst->imm;
+         // Geting the value of lw address
+         FILE *inputFile = fopen(argv[1],"r");
+         char *targetLine = getNthLine(inputFile, address+1);
+         fclose(inputFile);
+         targetLine = strtok(targetLine, "\t, \n");
+         targetLine = strtok(NULL, "\t, \n");
+         targetLine = strtok(NULL, "\t, \n");
+         registers[currInst->rt] = atoi(targetLine);
 
-         // printf("rt: %d /t rs: %d \t imm: %d \n", currInst->rt, currInst->rs, currInst->imm);
+         // Constructing result in binary
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));
+
+         printf("R[%d]: %d \n", currInst->rt, registers[currInst->rt]);
+         printf("rt: %d /t rs: %d \t imm: %d \n", currInst->rt, currInst->rs, currInst->imm);
       }
 
       if(strcmp(currInst->mnemonic, "add") == 0){
@@ -129,8 +133,20 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
-         strcpy(currInst->opCode, "0000");
+         // strcpy(currInst->opCode, "0000");
          registers[currInst->rd] = registers[currInst->rs] + registers[currInst->rt];
+      }
+
+      if(strcmp(currInst->mnemonic, "sub") == 0){
+         currInst->instType = 0;
+         token = strtok(NULL, "\t, \n");
+         currInst->rd = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+         // strcpy(currInst->opCode, "0001");
+         registers[currInst->rd] = registers[currInst->rs] - registers[currInst->rt];
       }
    }
 
@@ -177,8 +193,35 @@ int fillSymbolTable(struct symbolTable *symTable, FILE *inputFile){
    return lineNo;
 }
 
-void formInstruction(struct instruction *, FILE *){
+void formInstruction(struct instruction *currInst){
+   char temp[33];
+   currInst->instBin[0] = currInst->instBin[1] = currInst->instBin[2] = currInst->instBin[3] = '0'; // unused
+   currInst->instBin[4] = '\0';
 
+   // opcode
+   long long bin = int2Binary(currInst->opCode);
+   strcpy(temp, binaryExtend(bin, 4, '0'));
+   strcat(currInst->instBin, temp);
+
+   if(currInst->instType == 0){
+      
+   }
+   else if(currInst->instType == 1){
+      bin = int2Binary(currInst->rs);
+      strcpy(temp, binaryExtend(bin, 4, '0'));
+      strcat(currInst->instBin, temp);
+
+      bin = int2Binary(currInst->rt);
+      strcpy(temp, binaryExtend(bin, 4, '0'));
+      strcat(currInst->instBin, temp);
+
+      bin = int2Binary(currInst->imm);
+      strcpy(temp, binaryExtend(bin, 16, '0'));
+      strcat(currInst->instBin, temp);
+   }
+   else if(currInst->instType == 2){
+      
+   }
 }
 
 int hex2Int(char *hex){
@@ -243,4 +286,77 @@ bool isLable(char *str){
 
 void writeToFile(FILE *outputFile, int value){
    fprintf(outputFile, "%d\n", value);
+}
+
+int getLableAdress(struct memoryTable *pMemoryTable, char *lable){
+   for(int i=0; i<memorySize; i++){
+      if(strcmp(pMemoryTable[i].lable, lable) == 0){
+         return pMemoryTable[i].address;
+      }
+   }
+   // No such a lable
+   return -1;
+}
+
+int getAdressValue(struct memoryTable *pMemoryTable, int address){
+   for(int i=0; i<memorySize; i++){
+      if(pMemoryTable[i].address == address){
+         return pMemoryTable[i].value;
+      }
+   }
+   // No such a lable
+   return -1;
+}
+
+char *getNthLine(FILE *inputFile, int n){
+   int count = 0;
+   size_t lineSize;
+   char *line;
+   line = (char *)malloc(72);
+   while(getline(&line, &lineSize, inputFile) != -1){
+      count++;
+      if(count == n){
+         break;
+      }
+   }
+   return (char *)line;
+}
+
+long long int2Binary(int num){
+   long long bin = 0;
+   int rem, i = 1;
+
+   while (num != 0){
+      rem = num % 2;
+      num /= 2;
+      bin += rem * i;
+      i *= 10;
+   }
+   return bin;
+}
+
+char *binaryExtend(long long bin, int len, char sign){
+   char cBin[33], *final;
+   final = (char *)malloc(33);
+   sprintf(cBin, "%d", bin);
+
+   int diff = len - strlen(cBin);
+   for(int i=0; i<diff; i++){
+      final[i] = sign;
+   }
+   final[diff] = '\0';  // End of character array
+   strcat(final, cBin);
+   return (char *)final;
+}
+
+long long bin2Dec(char *binary, int len){
+   long long decimal = 0;
+   int position = 0;
+   int i = len - 1;
+   while(i >= 0){
+      decimal = decimal + (binary[i] - 48) * pow(2, position);
+      i--;
+      position++;
+   }
+   return decimal;
 }
