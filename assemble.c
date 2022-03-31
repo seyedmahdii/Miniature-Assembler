@@ -148,6 +148,83 @@ void main(int argc,char **argv){
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
+
+      if(strcmp(currInst->mnemonic, "slt") == 0){
+         currInst->instType = 0;
+         currInst->opCode = 2;
+         token = strtok(NULL, "\t, \n");
+         currInst->rd = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+         if(registers[currInst->rs] < registers[currInst->rt]){
+            registers[currInst->rd] = 1;
+         } 
+         else{
+            registers[currInst->rd] = 0;
+         }
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));  
+      }
+
+      if(strcmp(currInst->mnemonic, "or") == 0){
+         currInst->instType = 0;
+         currInst->opCode = 3;
+         token = strtok(NULL, "\t, \n");
+         currInst->rd = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+
+         char or1[33], or2[33], res[33];
+         long long bin = int2Binary(registers[currInst->rs]);
+         strcpy(or1, binaryExtend(bin, 32, '0'));
+         bin = int2Binary(registers[currInst->rt]);
+         strcpy(or2, binaryExtend(bin, 32, '0'));
+         for(i=0; i<32; i++){
+            if(or1[i] == '1' || or2[i] == '1'){
+               res[i] = '1';
+            }
+            else{
+               res[i] = '0';  
+            }
+         }
+         registers[currInst->rd] = bin2Dec(res, 32);
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));  
+      }
+
+      if(strcmp(currInst->mnemonic, "nand") == 0){
+         currInst->instType = 0;
+         currInst->opCode = 4;
+         token = strtok(NULL, "\t, \n");
+         currInst->rd = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+
+         char nand1[33], nand2[33], res[33];
+         long long bin = int2Binary(registers[currInst->rs]);
+         strcpy(nand1, binaryExtend(bin, 32, '0'));
+         bin = int2Binary(registers[currInst->rt]);
+         strcpy(nand2, binaryExtend(bin, 32, '0'));
+         for(i=0; i<32; i++){
+            if(nand1[i] == '0' || nand2[i] == '0'){
+               res[i] = '1';
+            }
+            else{
+               res[i] = '0';  
+            }
+         }
+         registers[currInst->rd] = bin2Dec(res, 32);
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));  
+      }
+
+      
    }
 
    fclose(assp);
