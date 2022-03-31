@@ -117,36 +117,36 @@ void main(int argc,char **argv){
          targetLine = strtok(NULL, "\t, \n");
          registers[currInst->rt] = atoi(targetLine);
 
-         // Constructing result in binary
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
-
-         printf("R[%d]: %d \n", currInst->rt, registers[currInst->rt]);
-         printf("rt: %d /t rs: %d \t imm: %d \n", currInst->rt, currInst->rs, currInst->imm);
       }
 
       if(strcmp(currInst->mnemonic, "add") == 0){
          currInst->instType = 0;
+         currInst->opCode = 0;
          token = strtok(NULL, "\t, \n");
          currInst->rd = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
-         // strcpy(currInst->opCode, "0000");
          registers[currInst->rd] = registers[currInst->rs] + registers[currInst->rt];
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
       if(strcmp(currInst->mnemonic, "sub") == 0){
          currInst->instType = 0;
+         currInst->opCode = 1;
          token = strtok(NULL, "\t, \n");
          currInst->rd = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
-         // strcpy(currInst->opCode, "0001");
          registers[currInst->rd] = registers[currInst->rs] - registers[currInst->rt];
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
    }
 
@@ -204,7 +204,19 @@ void formInstruction(struct instruction *currInst){
    strcat(currInst->instBin, temp);
 
    if(currInst->instType == 0){
-      
+      bin = int2Binary(currInst->rs);
+      strcpy(temp, binaryExtend(bin, 4, '0'));
+      strcat(currInst->instBin, temp);
+
+      bin = int2Binary(currInst->rt);
+      strcpy(temp, binaryExtend(bin, 4, '0'));
+      strcat(currInst->instBin, temp);
+
+      bin = int2Binary(currInst->rd);
+      strcpy(temp, binaryExtend(bin, 4, '0'));
+      strcat(currInst->instBin, temp);
+
+      strcat(currInst->instBin, "000000000000"); // unused
    }
    else if(currInst->instType == 1){
       bin = int2Binary(currInst->rs);
