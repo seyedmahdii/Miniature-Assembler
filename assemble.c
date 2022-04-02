@@ -224,11 +224,176 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      
+      if(strcmp(currInst->mnemonic, "addi") == 0){
+         currInst->instType = 1;
+         currInst->opCode = 5;
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->imm = atoi(token);
+         registers[currInst->rt] = registers[currInst->rs] + currInst->imm;
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));  
+      }
+
+      if(strcmp(currInst->mnemonic, "slti") == 0){
+         currInst->instType = 1;
+         currInst->opCode = 6;
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->imm = atoi(token);
+         if(registers[currInst->rs] < currInst->imm){
+            registers[currInst->rt] = 1;
+         } 
+         else{
+            registers[currInst->rt] = 0;
+         }
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));  
+      }
+
+      if(strcmp(currInst->mnemonic, "ori") == 0){
+         currInst->instType = 1;
+         currInst->opCode = 7;
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->imm = atoi(token);
+         if(registers[currInst->rs] < currInst->imm){
+            registers[currInst->rt] = 1;
+         } 
+
+         char or1[33], or2[33], res[33];
+         long long bin = int2Binary(registers[currInst->rs]);
+         strcpy(or1, binaryExtend(bin, 32, '0'));
+         bin = int2Binary(currInst->imm);
+         strcpy(or2, binaryExtend(bin, 32, '0'));
+         // The first 16 bits of ori result should be zero
+         for(i=0; i<16; i++){
+            res[i] = '0';
+         }
+         for(i=16; i<32; i++){
+            if(or1[i] == '1' || or2[i] == '1'){
+               res[i] = '1';
+            }
+            else{
+               res[i] = '0';  
+            }
+         }
+         registers[currInst->rt] = bin2Dec(res, 32);
+         
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));  
+      }
+
+      if(strcmp(currInst->mnemonic, "lui") == 0){
+         currInst->instType = 1;
+         currInst->opCode = 8;
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+         currInst->rs = 0;    // rs for lui instruction is 0
+         token = strtok(NULL, "\t, \n");
+         currInst->imm = atoi(token);
+         
+         registers[currInst->rt] = currInst->imm * pow(2, 16);
+         
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));  
+      }
+
+      if(strcmp(currInst->mnemonic, "sw") == 0){
+         currInst->instType = 1;
+         currInst->opCode = 10;
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         if(isLable(token)){
+            currInst->imm = getLableValue(pSymbolTable, symbolTableLen, token);  
+         }
+         else{
+            currInst->imm = atoi(token);
+         }
+         int address = registers[currInst->rs] + currInst->imm;
+         setAdressValue(pMemoryTable, address, registers[currInst->rt]);
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));
+      }
+
+      if(strcmp(currInst->mnemonic, "beq") == 0){
+         currInst->instType = 1;
+         currInst->opCode = 11;
+         // For beq instruction, the 1st register is rs and the 2nd one is rt
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         if(isLable(token)){
+            currInst->imm = getLableValue(pSymbolTable, symbolTableLen, token);  
+         }
+         else{
+            currInst->imm = atoi(token);
+         }
+
+         if(registers[currInst->rs] == registers[currInst->rt]){
+            goToNthLine(assp, currInst->imm);
+         }
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));
+      }
+
+      if(strcmp(currInst->mnemonic, "jalr") == 0){
+         currInst->instType = 1;
+         currInst->opCode = 12;
+         token = strtok(NULL, "\t, \n");
+         currInst->rt = atoi(token);
+         token = strtok(NULL, "\t, \n");
+         currInst->rs = atoi(token);
+         currInst->imm = 0;
+         goToNthLine(assp, currInst->rs);
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));
+      }
+
+      if(strcmp(currInst->mnemonic, "j") == 0){
+         currInst->instType = 2;
+         currInst->opCode = 13;
+         token = strtok(NULL, "\t, \n");
+         if(isLable(token)){
+            currInst->imm = getLableValue(pSymbolTable, symbolTableLen, token);  
+         }
+         else{
+            currInst->imm = atoi(token);
+         }
+         currInst->PC = currInst->imm;
+         printf("currInst->imm: %d\n", currInst->imm);
+         goToNthLine(assp, currInst->imm);
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));
+      }
+
+      if(strcmp(currInst->mnemonic, "halt") == 0){
+         currInst->instType = 2;
+         currInst->opCode = 14;
+         currInst->imm = 0;
+
+         formInstruction(currInst);
+         writeToFile(machp, bin2Dec(currInst->instBin, 32));
+      }
    }
 
    fclose(assp);
    fclose(machp);
+   exit(0);
 }
 
 int findSymbolTableLen(FILE *inputFile){
@@ -309,7 +474,10 @@ void formInstruction(struct instruction *currInst){
       strcat(currInst->instBin, temp);
    }
    else if(currInst->instType == 2){
-      
+      strcat(currInst->instBin, "0000000000000000"); // bits 23-16 unused
+      bin = int2Binary(currInst->imm);
+      strcpy(temp, binaryExtend(bin, 16, '0'));
+      strcat(currInst->instBin, temp);
    }
 }
 
@@ -397,6 +565,17 @@ int getAdressValue(struct memoryTable *pMemoryTable, int address){
    return -1;
 }
 
+bool setAdressValue(struct memoryTable *pMemoryTable, int address, int value){
+   for(int i=0; i<memorySize; i++){
+      if(pMemoryTable[i].address == address){
+         pMemoryTable[i].value = value;
+         return true;
+      }
+   }
+   // No such a address
+   return false;  
+}
+
 char *getNthLine(FILE *inputFile, int n){
    int count = 0;
    size_t lineSize;
@@ -448,4 +627,18 @@ long long bin2Dec(char *binary, int len){
       position++;
    }
    return decimal;
+}
+
+void goToNthLine(FILE *inputFile, int n){
+   rewind(inputFile);
+   size_t lineSize;
+   int count = 0;
+   char *line;
+   line = (char *)malloc(72);
+   while(getline(&line, &lineSize, inputFile) != -1){
+      count++;
+      if(count == n){
+         break;
+      }
+   }
 }
