@@ -51,3 +51,7 @@ long long int2Binary(int dec);	// Converts decimal to binary
 char *binaryExtend(long long bin, int len, char sign);	// Etxends binary
 long long bin2Dec(char *, int);
 void goToNthLine(FILE *, int);
+void checkDuplicateLabels(struct symbolTable *, int);
+bool isOffsetAcceptable(int);
+void tooLargeOffsetErrorHandler(int offset, int lineNo);
+void undefinedLabelErrorHandler(char *label, int lineNo);

@@ -52,6 +52,9 @@ void main(int argc,char **argv){
    }
    noInsts = fillSymbolTable(pSymbolTable, assp);
 
+   // Error: Duplicate label
+   checkDuplicateLabels(pSymbolTable, symbolTableLen);
+
    // Initializing memory table
    pMemoryTable = (struct memoryTable *)malloc(memorySize*sizeof(struct memoryTable));
 
@@ -74,10 +77,19 @@ void main(int argc,char **argv){
       if(strcmp(currInst->mnemonic, ".fill") == 0){
          token = strtok(NULL, "\t, \n");
          if(isLable(token)){
-            currInst->intInst = getLableValue(pSymbolTable, symbolTableLen, token);
+            currInst->intInst = getLableValue(pSymbolTable, symbolTableLen, token);  
+            // Error: No such a label in the symbolTable
+            if(currInst->intInst == -1){
+               undefinedLabelErrorHandler(token, instCount);
+            }
          }
          else{
             currInst->intInst = atoi(token);
+         }
+
+         // Error: Too large offset
+         if(!isOffsetAcceptable(currInst->intInst)){
+            tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
 
          if(memoryCounter < 2048){
@@ -103,10 +115,20 @@ void main(int argc,char **argv){
          token = strtok(NULL, "\t, \n");
          if(isLable(token)){
             currInst->imm = getLableValue(pSymbolTable, symbolTableLen, token);  
+            // Error: No such a label in the symbolTable
+            if(currInst->imm == -1){
+               undefinedLabelErrorHandler(token, instCount);
+            }
          }
          else{
             currInst->imm = atoi(token);
          }
+
+         // Error: Too large offset
+         if(!isOffsetAcceptable(currInst->imm)){
+            tooLargeOffsetErrorHandler(currInst->imm, instCount);
+         }
+
          int address = registers[currInst->rs] + currInst->imm;
          // Geting the value of lw address
          FILE *inputFile = fopen(argv[1],"r");
@@ -233,6 +255,9 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->imm = atoi(token);
+         if(!isOffsetAcceptable(currInst->intInst)){
+            tooLargeOffsetErrorHandler(currInst->imm, instCount);
+         }
          registers[currInst->rt] = registers[currInst->rs] + currInst->imm;
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
@@ -247,6 +272,9 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->imm = atoi(token);
+         if(!isOffsetAcceptable(currInst->intInst)){
+            tooLargeOffsetErrorHandler(currInst->imm, instCount);
+         }
          if(registers[currInst->rs] < currInst->imm){
             registers[currInst->rt] = 1;
          } 
@@ -266,6 +294,9 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->imm = atoi(token);
+         if(!isOffsetAcceptable(currInst->intInst)){
+            tooLargeOffsetErrorHandler(currInst->imm, instCount);
+         }
          if(registers[currInst->rs] < currInst->imm){
             registers[currInst->rt] = 1;
          } 
@@ -301,6 +332,9 @@ void main(int argc,char **argv){
          currInst->rs = 0;    // rs for lui instruction is 0
          token = strtok(NULL, "\t, \n");
          currInst->imm = atoi(token);
+         if(!isOffsetAcceptable(currInst->intInst)){
+            tooLargeOffsetErrorHandler(currInst->imm, instCount);
+         }
          
          registers[currInst->rt] = currInst->imm * pow(2, 16);
          
@@ -318,10 +352,20 @@ void main(int argc,char **argv){
          token = strtok(NULL, "\t, \n");
          if(isLable(token)){
             currInst->imm = getLableValue(pSymbolTable, symbolTableLen, token);  
+            // Error: No such a label in the symbolTable
+            if(currInst->imm == -1){
+               undefinedLabelErrorHandler(token, instCount);
+            }
          }
          else{
             currInst->imm = atoi(token);
          }
+
+         // Error: Too large offset
+         if(!isOffsetAcceptable(currInst->imm)){
+            tooLargeOffsetErrorHandler(currInst->imm, instCount);
+         }
+
          int address = registers[currInst->rs] + currInst->imm;
          setAdressValue(pMemoryTable, address, registers[currInst->rt]);
          formInstruction(currInst);
@@ -339,9 +383,18 @@ void main(int argc,char **argv){
          token = strtok(NULL, "\t, \n");
          if(isLable(token)){
             currInst->imm = getLableValue(pSymbolTable, symbolTableLen, token);  
+            // Error: No such a label in the symbolTable
+            if(currInst->imm == -1){
+               undefinedLabelErrorHandler(token, instCount);
+            }
          }
          else{
             currInst->imm = atoi(token);
+         }
+
+         // Error: Too large offset
+         if(!isOffsetAcceptable(currInst->imm)){
+            tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
 
          if(registers[currInst->rs] == registers[currInst->rt]){
@@ -641,4 +694,33 @@ void goToNthLine(FILE *inputFile, int n){
          break;
       }
    }
+}
+
+void checkDuplicateLabels(struct symbolTable *symTable, int symTableLen){
+   for(int i=0; i<symTableLen-1; i++){
+      for(int j=i+1; j<symTableLen; j++){
+        if(strcmp(symTable[i].symbol, symTable[j].symbol) == 0){
+            printf("Label \"%s\" already defined on line %d. \n", symTable[i].symbol, symTable[i].value+1);
+            exit(1);
+            return;
+        }
+      }
+   }
+}
+
+bool isOffsetAcceptable(int offset){
+   if(offset >= -32768 && offset <= 32767){
+      return true;
+   }
+   return false;
+}
+
+void tooLargeOffsetErrorHandler(int offset, int lineNo){
+   printf("Offset %d is too large to fit in 16 bits. Line: %d \n", offset, lineNo);
+   exit(1);
+}
+
+void undefinedLabelErrorHandler(char *label, int lineNo){
+   printf("Undefined label \"%s\" on line %d. \n", label, lineNo);
+   exit(1);
 }
