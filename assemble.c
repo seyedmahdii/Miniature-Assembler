@@ -15,11 +15,6 @@ void main(int argc,char **argv){
    char *line;
    char *token;
    char lable[7];
-   char *instructions[] = {
-      "add", "sub", "slt", "or", "nand",
-      "addi", "slti", "ori", "lui", "lw", "sw", "beq", "jalr",
-      "j", "halt"
-   };
    int instCount = 0;
 
    i = 0;
@@ -64,8 +59,6 @@ void main(int argc,char **argv){
       token = strtok(line, "\t, \n");
       strcpy(lable, token);   // Saving the first word for .fill
       for(i=0; i<symbolTableLen; i++){
-         // avalin token == sybmolTable[i].symbol, agar yeki bod, miram sare token baadi. token badi 
-         // mishe instruction am. age nabod hamon token instruction man hast.
          if(strcmp(pSymbolTable[i].symbol, token) == 0){
             token = strtok(NULL, "\t, \n");
          }
@@ -76,26 +69,27 @@ void main(int argc,char **argv){
 
       if(strcmp(currInst->mnemonic, ".fill") == 0){
          token = strtok(NULL, "\t, \n");
+         int labelValue;
          if(isLable(token)){
-            currInst->intInst = getLableValue(pSymbolTable, symbolTableLen, token);  
+            labelValue = getLableValue(pSymbolTable, symbolTableLen, token);  
             // Error: No such a label in the symbolTable
-            if(currInst->intInst == -1){
+            if(labelValue == -1){
                undefinedLabelErrorHandler(token, instCount);
             }
          }
          else{
-            currInst->intInst = atoi(token);
+            labelValue = atoi(token);
          }
 
          // Error: Too large offset
-         if(!isOffsetAcceptable(currInst->intInst)){
+         if(!isOffsetAcceptable(labelValue)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
 
          if(memoryCounter < 2048){
             strcpy(pMemoryTable[memoryCounter].lable, lable);
             pMemoryTable[memoryCounter].address = instCount-1;
-            pMemoryTable[memoryCounter].value = currInst->intInst;
+            pMemoryTable[memoryCounter].value = labelValue;
             writeToFile(machp, pMemoryTable[memoryCounter].value);
             memoryCounter++;
          }
@@ -255,7 +249,7 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->imm = atoi(token);
-         if(!isOffsetAcceptable(currInst->intInst)){
+         if(!isOffsetAcceptable(currInst->imm)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
          registers[currInst->rt] = registers[currInst->rs] + currInst->imm;
@@ -272,7 +266,7 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->imm = atoi(token);
-         if(!isOffsetAcceptable(currInst->intInst)){
+         if(!isOffsetAcceptable(currInst->imm)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
          if(registers[currInst->rs] < currInst->imm){
@@ -294,7 +288,7 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->imm = atoi(token);
-         if(!isOffsetAcceptable(currInst->intInst)){
+         if(!isOffsetAcceptable(currInst->imm)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
          if(registers[currInst->rs] < currInst->imm){
@@ -332,7 +326,7 @@ void main(int argc,char **argv){
          currInst->rs = 0;    // rs for lui instruction is 0
          token = strtok(NULL, "\t, \n");
          currInst->imm = atoi(token);
-         if(!isOffsetAcceptable(currInst->intInst)){
+         if(!isOffsetAcceptable(currInst->imm)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
          
@@ -367,7 +361,7 @@ void main(int argc,char **argv){
          }
 
          int address = registers[currInst->rs] + currInst->imm;
-         setAdressValue(pMemoryTable, address, registers[currInst->rt]);
+         setAddressValue(pMemoryTable, address, registers[currInst->rt]);
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -400,6 +394,7 @@ void main(int argc,char **argv){
          if(registers[currInst->rs] == registers[currInst->rt]){
             goToNthLine(assp, currInst->imm);
          }
+         currInst->imm = currInst->imm - instCount;
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -428,8 +423,8 @@ void main(int argc,char **argv){
             currInst->imm = atoi(token);
          }
          currInst->PC = currInst->imm;
-         printf("currInst->imm: %d\n", currInst->imm);
          goToNthLine(assp, currInst->imm);
+         currInst->imm = currInst->imm;
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -523,7 +518,14 @@ void formInstruction(struct instruction *currInst){
       strcat(currInst->instBin, temp);
 
       bin = int2Binary(currInst->imm);
-      strcpy(temp, binaryExtend(bin, 16, '0'));
+      if(currInst->imm < 0){
+         // 2's complement extension
+         bin = complement2s(bin);
+         strcpy(temp, binaryExtend(bin, 16, '1'));
+      }
+      else{
+         strcpy(temp, binaryExtend(bin, 16, '0'));
+      }
       strcat(currInst->instBin, temp);
    }
    else if(currInst->instType == 2){
@@ -531,48 +533,6 @@ void formInstruction(struct instruction *currInst){
       bin = int2Binary(currInst->imm);
       strcpy(temp, binaryExtend(bin, 16, '0'));
       strcat(currInst->instBin, temp);
-   }
-}
-
-int hex2Int(char *hex){
-   int result = 0;
-   while((*hex) != '\0'){
-      if((*hex) >= '0' && (*hex) <= '9'){
-         result = result * 16 + (*hex) - '0';
-      }
-      else if((*hex) >= 'a' && (*hex) <= 'f'){
-         result = result * 16 + (*hex) - 'a' + 10;
-      }
-      else if((*hex) >= 'A' && (*hex) <= 'F'){
-         result = result * 16 + (*hex) - 'A' + 10;
-      }
-      hex++;
-   }
-   return result;
-}
-
-void int2Hex16(char *lower, int a){
-   sprintf(lower, "%x", a);
-   if(a < 0x10){
-      lower[4] = '\0';
-      lower[3] = lower[0];
-      lower[2] = '0';
-      lower[1] = '0';
-      lower[0] = '0';
-   }
-   else if(a < 0x100){
-      lower[4] = '\0';
-      lower[3] = lower[1];
-      lower[2] = lower[0];
-      lower[1] = '0';
-      lower[0] = '0';  
-   }
-   else if(a < 0x1000){
-      lower[4] = '\0';
-      lower[3] = lower[2];
-      lower[2] = lower[1];
-      lower[1] = lower[0];
-      lower[0] = '0';  
    }
 }
 
@@ -598,17 +558,7 @@ void writeToFile(FILE *outputFile, int value){
    fprintf(outputFile, "%d\n", value);
 }
 
-int getLableAdress(struct memoryTable *pMemoryTable, char *lable){
-   for(int i=0; i<memorySize; i++){
-      if(strcmp(pMemoryTable[i].lable, lable) == 0){
-         return pMemoryTable[i].address;
-      }
-   }
-   // No such a lable
-   return -1;
-}
-
-int getAdressValue(struct memoryTable *pMemoryTable, int address){
+int getAddressValue(struct memoryTable *pMemoryTable, int address){
    for(int i=0; i<memorySize; i++){
       if(pMemoryTable[i].address == address){
          return pMemoryTable[i].value;
@@ -618,7 +568,7 @@ int getAdressValue(struct memoryTable *pMemoryTable, int address){
    return -1;
 }
 
-bool setAdressValue(struct memoryTable *pMemoryTable, int address, int value){
+bool setAddressValue(struct memoryTable *pMemoryTable, int address, int value){
    for(int i=0; i<memorySize; i++){
       if(pMemoryTable[i].address == address){
          pMemoryTable[i].value = value;
@@ -723,4 +673,35 @@ void tooLargeOffsetErrorHandler(int offset, int lineNo){
 void undefinedLabelErrorHandler(char *label, int lineNo){
    printf("Undefined label \"%s\" on line %d. \n", label, lineNo);
    exit(1);
+}
+
+long long complement2s(long long bin){
+   char ones[33], twos[33];
+   sprintf(ones, "%d", bin);
+
+   int len = strlen(ones);
+
+   // ones complement
+   for(int i=0; i<len; i++){
+      ones[i] = (ones[i] == '1') ? '0' : '1';
+   }
+   
+   strcpy(twos, ones);
+   int i;
+   for(i=len-1; i>=0; i--){
+      if(ones[i] == '1'){
+         twos[i] = '0';
+      }
+      else{
+         twos[i] = '1';
+         break;
+      }
+   }
+   if(i == -1){
+      char res[33];
+      res[0] = '1';
+      strcat(res, twos);
+      return atoi(res);
+   }
+   return atoi(twos);
 }
