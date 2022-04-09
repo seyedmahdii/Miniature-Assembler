@@ -22,20 +22,12 @@ struct instruction{
 	int PC;
 };
 
-struct memoryTable{
-	char lable[7];
-	int value;
-	int address;
-};
-
 int findSymbolTableLen(FILE *);
 int fillSymbolTable(struct symbolTable *, FILE *);
 void formInstruction(struct instruction *);
 int getLableValue(struct symbolTable *, int , char *);
 bool isLable(char *);
 void writeToFile(FILE *, int);
-int getAddressValue(struct memoryTable *, int);	// Returns the value of a address
-bool setAddressValue(struct memoryTable *, int address, int value);	// Sets the value of a address
 char *getNthLine(FILE *, int);
 long long int2Binary(int dec);	// Converts decimal to binary
 char *binaryExtend(long long bin, int len, char sign);	// Etxends binary

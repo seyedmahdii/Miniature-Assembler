@@ -1,14 +1,9 @@
 #include "assemble.h"
-const int memorySize = 8192;
 
 void main(int argc,char **argv){
    FILE *assp, *machp, *fopen();
    struct symbolTable *pSymbolTable;
    int symbolTableLen;
-   int registers[16];
-   registers[0] = 0;
-   struct memoryTable *pMemoryTable;
-   int memoryCounter = 0;
    int i, j, noInsts;
    struct instruction *currInst;
    size_t lineSize;
@@ -50,9 +45,6 @@ void main(int argc,char **argv){
    // Error: Duplicate label
    checkDuplicateLabels(pSymbolTable, symbolTableLen);
 
-   // Initializing memory table
-   pMemoryTable = (struct memoryTable *)malloc(memorySize*sizeof(struct memoryTable));
-
    while(getline(&line, &lineSize, assp) != -1){
       currInst->PC = instCount;
       instCount++;
@@ -86,17 +78,7 @@ void main(int argc,char **argv){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
 
-         if(memoryCounter < 2048){
-            strcpy(pMemoryTable[memoryCounter].lable, lable);
-            pMemoryTable[memoryCounter].address = instCount-1;
-            pMemoryTable[memoryCounter].value = labelValue;
-            writeToFile(machp, pMemoryTable[memoryCounter].value);
-            memoryCounter++;
-         }
-         else{
-            // *************
-            // Throw exception
-         }
+         writeToFile(machp, labelValue);
       }
 
       if(strcmp(currInst->mnemonic, "lw") == 0){
@@ -123,16 +105,6 @@ void main(int argc,char **argv){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
 
-         int address = registers[currInst->rs] + currInst->imm;
-         // Geting the value of lw address
-         FILE *inputFile = fopen(argv[1],"r");
-         char *targetLine = getNthLine(inputFile, address+1);
-         fclose(inputFile);
-         targetLine = strtok(targetLine, "\t, \n");
-         targetLine = strtok(NULL, "\t, \n");
-         targetLine = strtok(NULL, "\t, \n");
-         registers[currInst->rt] = atoi(targetLine);
-
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -146,7 +118,6 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
-         registers[currInst->rd] = registers[currInst->rs] + registers[currInst->rt];
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
@@ -160,7 +131,6 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
-         registers[currInst->rd] = registers[currInst->rs] - registers[currInst->rt];
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
@@ -174,12 +144,6 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
-         if(registers[currInst->rs] < registers[currInst->rt]){
-            registers[currInst->rd] = 1;
-         } 
-         else{
-            registers[currInst->rd] = 0;
-         }
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
@@ -193,21 +157,6 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
-
-         char or1[33], or2[33], res[33];
-         long long bin = int2Binary(registers[currInst->rs]);
-         strcpy(or1, binaryExtend(bin, 32, '0'));
-         bin = int2Binary(registers[currInst->rt]);
-         strcpy(or2, binaryExtend(bin, 32, '0'));
-         for(i=0; i<32; i++){
-            if(or1[i] == '1' || or2[i] == '1'){
-               res[i] = '1';
-            }
-            else{
-               res[i] = '0';  
-            }
-         }
-         registers[currInst->rd] = bin2Dec(res, 32);
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
@@ -221,21 +170,6 @@ void main(int argc,char **argv){
          currInst->rs = atoi(token);
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
-
-         char nand1[33], nand2[33], res[33];
-         long long bin = int2Binary(registers[currInst->rs]);
-         strcpy(nand1, binaryExtend(bin, 32, '0'));
-         bin = int2Binary(registers[currInst->rt]);
-         strcpy(nand2, binaryExtend(bin, 32, '0'));
-         for(i=0; i<32; i++){
-            if(nand1[i] == '0' || nand2[i] == '0'){
-               res[i] = '1';
-            }
-            else{
-               res[i] = '0';  
-            }
-         }
-         registers[currInst->rd] = bin2Dec(res, 32);
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
@@ -252,7 +186,6 @@ void main(int argc,char **argv){
          if(!isOffsetAcceptable(currInst->imm)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
-         registers[currInst->rt] = registers[currInst->rs] + currInst->imm;
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
@@ -268,12 +201,6 @@ void main(int argc,char **argv){
          currInst->imm = atoi(token);
          if(!isOffsetAcceptable(currInst->imm)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
-         }
-         if(registers[currInst->rs] < currInst->imm){
-            registers[currInst->rt] = 1;
-         } 
-         else{
-            registers[currInst->rt] = 0;
          }
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
@@ -291,29 +218,6 @@ void main(int argc,char **argv){
          if(!isOffsetAcceptable(currInst->imm)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
-         if(registers[currInst->rs] < currInst->imm){
-            registers[currInst->rt] = 1;
-         } 
-
-         char or1[33], or2[33], res[33];
-         long long bin = int2Binary(registers[currInst->rs]);
-         strcpy(or1, binaryExtend(bin, 32, '0'));
-         bin = int2Binary(currInst->imm);
-         strcpy(or2, binaryExtend(bin, 32, '0'));
-         // The first 16 bits of ori result should be zero
-         for(i=0; i<16; i++){
-            res[i] = '0';
-         }
-         for(i=16; i<32; i++){
-            if(or1[i] == '1' || or2[i] == '1'){
-               res[i] = '1';
-            }
-            else{
-               res[i] = '0';  
-            }
-         }
-         registers[currInst->rt] = bin2Dec(res, 32);
-         
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
@@ -329,9 +233,6 @@ void main(int argc,char **argv){
          if(!isOffsetAcceptable(currInst->imm)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
-         
-         registers[currInst->rt] = currInst->imm * pow(2, 16);
-         
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
@@ -354,14 +255,10 @@ void main(int argc,char **argv){
          else{
             currInst->imm = atoi(token);
          }
-
          // Error: Too large offset
          if(!isOffsetAcceptable(currInst->imm)){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
-
-         int address = registers[currInst->rs] + currInst->imm;
-         setAddressValue(pMemoryTable, address, registers[currInst->rt]);
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -391,9 +288,6 @@ void main(int argc,char **argv){
             tooLargeOffsetErrorHandler(currInst->imm, instCount);
          }
 
-         if(registers[currInst->rs] == registers[currInst->rt]){
-            // Jump to that address
-         }
          currInst->imm = currInst->imm - instCount;
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
@@ -407,8 +301,6 @@ void main(int argc,char **argv){
          token = strtok(NULL, "\t, \n");
          currInst->rs = atoi(token);
          currInst->imm = 0;
-         // Jump
-
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -424,9 +316,6 @@ void main(int argc,char **argv){
             currInst->imm = atoi(token);
          }
          currInst->PC = currInst->imm;
-
-         // Jump
-
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -435,7 +324,6 @@ void main(int argc,char **argv){
          currInst->instType = 2;
          currInst->opCode = 14;
          currInst->imm = 0;
-
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -558,27 +446,6 @@ bool isLable(char *str){
 
 void writeToFile(FILE *outputFile, int value){
    fprintf(outputFile, "%d\n", value);
-}
-
-int getAddressValue(struct memoryTable *pMemoryTable, int address){
-   for(int i=0; i<memorySize; i++){
-      if(pMemoryTable[i].address == address){
-         return pMemoryTable[i].value;
-      }
-   }
-   // No such a lable
-   return -1;
-}
-
-bool setAddressValue(struct memoryTable *pMemoryTable, int address, int value){
-   for(int i=0; i<memorySize; i++){
-      if(pMemoryTable[i].address == address){
-         pMemoryTable[i].value = value;
-         return true;
-      }
-   }
-   // No such a address
-   return false;  
 }
 
 char *getNthLine(FILE *inputFile, int n){
