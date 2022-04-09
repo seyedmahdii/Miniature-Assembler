@@ -392,7 +392,7 @@ void main(int argc,char **argv){
          }
 
          if(registers[currInst->rs] == registers[currInst->rt]){
-            goToNthLine(assp, currInst->imm);
+            // Jump to that address
          }
          currInst->imm = currInst->imm - instCount;
          formInstruction(currInst);
@@ -407,7 +407,8 @@ void main(int argc,char **argv){
          token = strtok(NULL, "\t, \n");
          currInst->rs = atoi(token);
          currInst->imm = 0;
-         goToNthLine(assp, currInst->rs);
+         // Jump
+
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -423,8 +424,9 @@ void main(int argc,char **argv){
             currInst->imm = atoi(token);
          }
          currInst->PC = currInst->imm;
-         goToNthLine(assp, currInst->imm);
-         currInst->imm = currInst->imm;
+
+         // Jump
+
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -529,7 +531,7 @@ void formInstruction(struct instruction *currInst){
       strcat(currInst->instBin, temp);
    }
    else if(currInst->instType == 2){
-      strcat(currInst->instBin, "0000000000000000"); // bits 23-16 unused
+      strcat(currInst->instBin, "00000000"); // bits 23-16 unused
       bin = int2Binary(currInst->imm);
       strcpy(temp, binaryExtend(bin, 16, '0'));
       strcat(currInst->instBin, temp);
@@ -630,20 +632,6 @@ long long bin2Dec(char *binary, int len){
       position++;
    }
    return decimal;
-}
-
-void goToNthLine(FILE *inputFile, int n){
-   rewind(inputFile);
-   size_t lineSize;
-   int count = 0;
-   char *line;
-   line = (char *)malloc(72);
-   while(getline(&line, &lineSize, inputFile) != -1){
-      count++;
-      if(count == n){
-         break;
-      }
-   }
 }
 
 void checkDuplicateLabels(struct symbolTable *symTable, int symTableLen){
