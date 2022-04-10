@@ -49,7 +49,6 @@ void main(int argc,char **argv){
       currInst->PC = instCount;
       instCount++;
       token = strtok(line, "\t, \n");
-      strcpy(lable, token);   // Saving the first word for .fill
       for(i=0; i<symbolTableLen; i++){
          if(strcmp(pSymbolTable[i].symbol, token) == 0){
             token = strtok(NULL, "\t, \n");
@@ -299,7 +298,16 @@ void main(int argc,char **argv){
          token = strtok(NULL, "\t, \n");
          currInst->rt = atoi(token);
          token = strtok(NULL, "\t, \n");
-         currInst->rs = atoi(token);
+         if(isLable(token)){
+            currInst->rs = getLableValue(pSymbolTable, symbolTableLen, token);  
+            // Error: No such a label in the symbolTable
+            if(currInst->rs == -1){
+               undefinedLabelErrorHandler(token, instCount);
+            }
+         }
+         else{
+            currInst->rs = atoi(token);
+         }
          currInst->imm = 0;
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
