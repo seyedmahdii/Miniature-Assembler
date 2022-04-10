@@ -288,6 +288,7 @@ void main(int argc,char **argv){
          }
 
          currInst->imm = currInst->imm - instCount;
+         currInst->PC = currInst->imm;
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
@@ -309,6 +310,7 @@ void main(int argc,char **argv){
             currInst->rs = atoi(token);
          }
          currInst->imm = 0;
+         currInst->PC = currInst->rs;
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
