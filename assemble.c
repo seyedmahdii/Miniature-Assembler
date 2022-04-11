@@ -80,7 +80,7 @@ void main(int argc,char **argv){
          writeToFile(machp, labelValue);
       }
 
-      if(strcmp(currInst->mnemonic, "lw") == 0){
+      else if(strcmp(currInst->mnemonic, "lw") == 0){
          currInst->instType = 1;
          currInst->opCode = 9;
          token = strtok(NULL, "\t, \n");
@@ -108,7 +108,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
 
-      if(strcmp(currInst->mnemonic, "add") == 0){
+      else if(strcmp(currInst->mnemonic, "add") == 0){
          currInst->instType = 0;
          currInst->opCode = 0;
          token = strtok(NULL, "\t, \n");
@@ -121,7 +121,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      if(strcmp(currInst->mnemonic, "sub") == 0){
+      else if(strcmp(currInst->mnemonic, "sub") == 0){
          currInst->instType = 0;
          currInst->opCode = 1;
          token = strtok(NULL, "\t, \n");
@@ -134,7 +134,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      if(strcmp(currInst->mnemonic, "slt") == 0){
+      else if(strcmp(currInst->mnemonic, "slt") == 0){
          currInst->instType = 0;
          currInst->opCode = 2;
          token = strtok(NULL, "\t, \n");
@@ -147,7 +147,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      if(strcmp(currInst->mnemonic, "or") == 0){
+      else if(strcmp(currInst->mnemonic, "or") == 0){
          currInst->instType = 0;
          currInst->opCode = 3;
          token = strtok(NULL, "\t, \n");
@@ -160,7 +160,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      if(strcmp(currInst->mnemonic, "nand") == 0){
+      else if(strcmp(currInst->mnemonic, "nand") == 0){
          currInst->instType = 0;
          currInst->opCode = 4;
          token = strtok(NULL, "\t, \n");
@@ -173,7 +173,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      if(strcmp(currInst->mnemonic, "addi") == 0){
+      else if(strcmp(currInst->mnemonic, "addi") == 0){
          currInst->instType = 1;
          currInst->opCode = 5;
          token = strtok(NULL, "\t, \n");
@@ -189,7 +189,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      if(strcmp(currInst->mnemonic, "slti") == 0){
+      else if(strcmp(currInst->mnemonic, "slti") == 0){
          currInst->instType = 1;
          currInst->opCode = 6;
          token = strtok(NULL, "\t, \n");
@@ -205,7 +205,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      if(strcmp(currInst->mnemonic, "ori") == 0){
+      else if(strcmp(currInst->mnemonic, "ori") == 0){
          currInst->instType = 1;
          currInst->opCode = 7;
          token = strtok(NULL, "\t, \n");
@@ -221,7 +221,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      if(strcmp(currInst->mnemonic, "lui") == 0){
+      else if(strcmp(currInst->mnemonic, "lui") == 0){
          currInst->instType = 1;
          currInst->opCode = 8;
          token = strtok(NULL, "\t, \n");
@@ -236,7 +236,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));  
       }
 
-      if(strcmp(currInst->mnemonic, "sw") == 0){
+      else if(strcmp(currInst->mnemonic, "sw") == 0){
          currInst->instType = 1;
          currInst->opCode = 10;
          token = strtok(NULL, "\t, \n");
@@ -262,7 +262,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
 
-      if(strcmp(currInst->mnemonic, "beq") == 0){
+      else if(strcmp(currInst->mnemonic, "beq") == 0){
          currInst->instType = 1;
          currInst->opCode = 11;
          // For beq instruction, the 1st register is rs and the 2nd one is rt
@@ -293,7 +293,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
 
-      if(strcmp(currInst->mnemonic, "jalr") == 0){
+      else if(strcmp(currInst->mnemonic, "jalr") == 0){
          currInst->instType = 1;
          currInst->opCode = 12;
          token = strtok(NULL, "\t, \n");
@@ -315,7 +315,7 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
 
-      if(strcmp(currInst->mnemonic, "j") == 0){
+      else if(strcmp(currInst->mnemonic, "j") == 0){
          currInst->instType = 2;
          currInst->opCode = 13;
          token = strtok(NULL, "\t, \n");
@@ -330,12 +330,17 @@ void main(int argc,char **argv){
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
       }
 
-      if(strcmp(currInst->mnemonic, "halt") == 0){
+      else if(strcmp(currInst->mnemonic, "halt") == 0){
          currInst->instType = 2;
          currInst->opCode = 14;
          currInst->imm = 0;
          formInstruction(currInst);
          writeToFile(machp, bin2Dec(currInst->instBin, 32));
+      }
+
+      else{
+         printf("Undefined instruction \"%s\" on line: %d \n", currInst->mnemonic, instCount);
+         exit(1);
       }
    }
 
